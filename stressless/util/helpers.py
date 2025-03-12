@@ -1,6 +1,5 @@
+from functools import wraps
 from pathlib import Path
-import sys
-import traceback
 from typing import Optional
 
 import xlwings as xw
@@ -30,20 +29,9 @@ def load_from_excel(parent: Optional[QWidget] = None, open_dir: Path = None) -> 
         return None, None
     file_path = Path(file_path)
 
-    # TODO: The user needs to know that Excel is opening
-    # Making a message to let the user know that excel is opening
-    # opening_message = QMessageBox(parent)
-    # opening_message.setWindowTitle("Please Wait")
-    # opening_message.setText("Opening Excel file...")
-    # opening_message.setStandardButtons(QMessageBox.StandardButton.NoButton)
-    # opening_message.show()
-
     # Open the workbook
     book = xw.Book(file_path.absolute())
     app = book.app
-
-    # Close the message box
-    # opening_message.close()
 
     # Notify the user to make a selection in Excel
     # This modal message box will block until the user clicks OK.
@@ -64,9 +52,19 @@ def load_from_excel(parent: Optional[QWidget] = None, open_dir: Path = None) -> 
     return data, file_path
 
 
-def my_exception_hook(exc_type, value, tb):
-    # Print the exception to the console.
-    print("Unhandled exception:", exc_type, value)
-    traceback.print_tb(tb)
-    # Optionally, call the default except hook to exit.
-    sys.__excepthook__(exc_type, value, tb)
+# TODO: this should be adjusted to do something special if we get an unexpected exception
+def catch_exceptions(func):
+    """
+    A decorator that catches exceptions and shows a message box to the user.
+
+    :param func:
+    :return:
+    """
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except Exception as e:
+            parent = args[0] if isinstance(args[0], QWidget) else None
+            QMessageBox.critical(parent, "Error", str(e))
+    return wrapper

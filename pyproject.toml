@@ -13,7 +13,8 @@ authors = [
 ]
 dependencies = [
     "PyQt6",
-    "xlwings"
+    "xlwings",
+    "matplotlib"
     # Add additional dependencies here if needed.
 ]
 requires-python = ">=3.7"
