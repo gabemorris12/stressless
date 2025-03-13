@@ -88,6 +88,7 @@ class BarConfigWindow(QDialog):
                 if key not in ('wave_speed', 'density', 'modulus'):
                     self.bar[key].setText(str(value))
 
+    # TODO: It may be necessary to put the catch_exceptions here instead of the upper level calls
     def validate(self):
         values = [line_edit.text() for line_edit in self.bar.values()]
         if not all(values):

@@ -3,18 +3,95 @@ from collections.abc import Iterable
 from pathlib import Path
 
 import numpy as np
+from typing import Optional
+
+from stressless.core.waves import IncidentWave, ReflectedWave, TransmittedWave
+from stressless.util.logger import logger
 
 
 class HopkinsonExperiment:
-    def __init__(self, raw_data: Iterable, file: Path, existing_data: list[str] = None):
+    def __init__(self, raw_data: Iterable, file: Path | str | None = None, existing_data: list[str] = None):
         self._validate_data(raw_data)
 
         self.file = file
         self.name = None
+        self._incident_bar: Optional[dict] = None
+        self._transmitted_bar: Optional[dict] = None
+
+        self.incident_wave = IncidentWave(self.raw_data[:, 0])
+        self.reflected_wave = ReflectedWave(self.raw_data[:, 0])
+        self.transmitted_wave = TransmittedWave(self.raw_data[:, 1])
+
+        self.crop_start, self.crop_end = None, None
+        self.crop_voltage = None
+        self.n_samples = self.raw_data.shape[0]
+
+        # Null offset
+        self.incident_offset = 0
+        self.transmitted_offset = 0
 
         # If existing data is provided, then adjust the name
         if existing_data is not None:
             self._set_name(existing_data)
+
+    @property
+    def incident_bar(self) -> Optional[dict]:
+        """
+        :return: Dictionary of the incident bar configuration information.
+        """
+        return self._incident_bar
+
+    @incident_bar.setter
+    def incident_bar(self, value: dict):
+        """
+        The setter for the incident bar configuration information. This will also populate
+
+        :param value: Dictionary of the incident bar configuration information.
+        """
+        self._incident_bar = value
+
+        self.incident_wave.bar_properties = value
+        self.reflected_wave.bar_properties = value
+
+    @property
+    def transmitted_bar(self) -> Optional[dict]:
+        """
+        :return: Dictionary of the transmitted bar configuration information.
+        """
+        return self._transmitted_bar
+
+    @transmitted_bar.setter
+    def transmitted_bar(self, value: dict):
+        """
+        The setter for the transmitted bar configuration information.
+
+        :param value: Dictionary of the transmitted bar configuration information.
+        """
+        self._transmitted_bar = value
+        self.transmitted_wave.bar_properties = value
+
+    def set_crop(self):
+        """
+        Sets the crop_voltage attribute
+        """
+        assert self.crop_start and self.crop_end, "Crop start and end must be set before setting the crop."
+        self.crop_voltage = self.raw_data[self.crop_start:self.crop_end, :]
+
+        self.incident_wave.crop_voltage = self.crop_voltage[:, 0]
+        self.reflected_wave.crop_voltage = self.crop_voltage
+        self.transmitted_wave.crop_voltage = self.crop_voltage[:, 1]
+
+    def set_incident_offset(self, start: int, end: int):
+        """
+        Set the incident offset by taking an average of the data between start and end. The mean of the values
+        between start and end is the offset value. The domain from start and end should be the zero region of the
+        signal.
+
+        :param start: The start index of the zero region.
+        :param end: The end index of the zero region.
+        """
+        self.incident_offset = np.mean(self.raw_data[start:end, 0])
+        logger.info(f"Incident offset set to {self.incident_offset}")
 
     def _validate_data(self, raw_data: Iterable):
         """
