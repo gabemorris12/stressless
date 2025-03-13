@@ -24,6 +24,8 @@ class HopkinsonExperiment:
 
         self.crop_start, self.crop_end = None, None
         self.crop_voltage = None
+        self._no_adjustment_crop = None
+        self.incident_invert, self.transmitted_invert = 1, 1
         self.n_samples = self.raw_data.shape[0]
 
         # Null offset
@@ -75,11 +77,12 @@ class HopkinsonExperiment:
         Sets the crop_voltage attribute
         """
         assert self.crop_start and self.crop_end, "Crop start and end must be set before setting the crop."
-        self.crop_voltage = self.raw_data[self.crop_start:self.crop_end, :]
+        self.crop_voltage = np.copy(self.raw_data[self.crop_start:self.crop_end, :])
+        self._no_adjustment_crop = np.copy(self.crop_voltage)
 
-        self.incident_wave.crop_voltage = self.crop_voltage[:, 0]
-        self.reflected_wave.crop_voltage = self.crop_voltage
-        self.transmitted_wave.crop_voltage = self.crop_voltage[:, 1]
+        self._set_crop_voltage_to_waves()
+
+        logger.info(f"Crop set to {self.crop_start} to {self.crop_end} for {self.name}.")
 
     def set_incident_offset(self, start: int, end: int):
         """
@@ -92,6 +95,31 @@ class HopkinsonExperiment:
         """
         self.incident_offset = np.mean(self.raw_data[start:end, 0])
         logger.info(f"Incident offset set to {self.incident_offset}")
+
+    def set_transmitted_offset(self, start: int, end: int):
+        """
+        Set the transmitted offset by taking an average of the data between start and end. The mean of the values
+        between start and end is the offset value. The domain from start and end should be the zero region of the
+        signal.
+
+        :param start: The start index of the zero region.
+        :param end: The end index of the zero region.
+        """
+        self.transmitted_offset = np.mean(self.raw_data[start:end, 1])
+        logger.info(f"Transmitted offset set to {self.transmitted_offset}")
+
+    def update_crop_voltage(self):
+        """
+        Modifies the cropped voltage by subtracting the offsets and inverting. This will raise an error if the crop
+        has not yet been set.
+        """
+        if self.crop_voltage is None:
+            raise ValueError("Crop voltage must be set before updating the crop voltage.")
+
+        self.crop_voltage[:, 0] = (self._no_adjustment_crop[:, 0] - self.incident_offset)*self.incident_invert
+        self.crop_voltage[:, 1] = (self._no_adjustment_crop[:, 1] - self.transmitted_offset)*self.transmitted_invert
+
+        self._set_crop_voltage_to_waves()
 
     def _validate_data(self, raw_data: Iterable):
         """
@@ -130,6 +158,11 @@ class HopkinsonExperiment:
                     if num > max_num:
                         max_num = num
             self.name = f"{file_name} {max_num + 1}"
+
+    def _set_crop_voltage_to_waves(self):
+        self.incident_wave.crop_voltage = self.crop_voltage[:, 0]
+        self.reflected_wave.crop_voltage = self.crop_voltage
+        self.transmitted_wave.crop_voltage = self.crop_voltage[:, 1]
 
     def __repr__(self):
         return f"HopkinsonExperiment({self.raw_data.shape}, {self.file}, {self.name})"

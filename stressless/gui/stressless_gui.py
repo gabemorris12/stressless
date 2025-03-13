@@ -12,6 +12,7 @@ from stressless import _SETTINGS
 from stressless.core.hopkinson_data import HopkinsonExperiment
 from stressless.gui._bar_config import BarConfigWindow
 from stressless.gui._crop_widget import CropWidget
+from stressless.gui._show_signal_widget import ShowSignal
 from stressless.util.helpers import load_from_excel, catch_exceptions
 from stressless.util.logger import logger
 
@@ -142,6 +143,10 @@ class MainWindow(QMainWindow):
         # Add the signal processing box and widgets
         signal_processing_box = QGroupBox("Signal Processing")
         signal_processing_layout = QVBoxLayout()
+        self.show_signal_btn = QPushButton("Show Signal")
+        self.show_signal_btn.setEnabled(False)
+        self.show_signal_btn.clicked.connect(self._show_signal)
+        signal_processing_layout.addWidget(self.show_signal_btn)
         self.crop_button = QPushButton("Crop Signal")
         self.crop_button.setCheckable(True)
         self.crop_button.setEnabled(False)
@@ -154,6 +159,7 @@ class MainWindow(QMainWindow):
         self.null_incident_button.setEnabled(False)
         self.null_incident_button.clicked.connect(self._null_incident)
         incident_invert = QRadioButton("Invert")
+        incident_invert.clicked.connect(self._on_incident_invert)
         incident_invert.setAutoExclusive(False)
         null_layout.addWidget(incident_invert, 0, 0)
         null_layout.addWidget(self.null_incident_button, 0, 1)
@@ -161,8 +167,9 @@ class MainWindow(QMainWindow):
         self.null_transmitted_button = QPushButton("Null Transmitted")
         self.null_transmitted_button.setCheckable(True)
         self.null_transmitted_button.setEnabled(False)
-        # self.null_transmitted_button.clicked.connect(self._null_transmitted)
+        self.null_transmitted_button.clicked.connect(self._null_transmitted)
         transmitted_invert = QRadioButton("Invert")
+        transmitted_invert.clicked.connect(self._on_transmitted_invert)
         transmitted_invert.setAutoExclusive(False)
         null_layout.addWidget(transmitted_invert, 1, 0)
         null_layout.addWidget(self.null_transmitted_button, 1, 1)
@@ -207,6 +214,7 @@ class MainWindow(QMainWindow):
                 self.dataset_combo.addItem(experiment.name)
                 self.hopkinson_data.append(experiment)
                 self.dataset_combo.setCurrentIndex(self.dataset_combo.count() - 1)
+            self.show_signal_btn.setEnabled(True)
             self._update_dataset()  # necessary because the above line doesn't trigger sometimes
 
     def _update_dataset(self):
@@ -220,6 +228,32 @@ class MainWindow(QMainWindow):
         logger.info(f"Selected dataset: {self.current_experiment.name} from {self.current_experiment.file}")
         logger.info(f"Current datasets: {[exp.name for exp in self.hopkinson_data]}")
         self.crop_button.setEnabled(True)
+
+        # Check if the dataset has been cropped and nulled:
+        if self.current_experiment.crop_start is None:
+            self.crop_button.setChecked(False)
+        else:
+            self.crop_button.setChecked(True)
+        if self.current_experiment.incident_offset:
+            self.null_incident_button.setChecked(True)
+            self.null_incident_button.setEnabled(True)
+        elif not self.current_experiment.incident_offset and self.current_experiment.crop_start:
+            self.null_incident_button.setChecked(False)
+            self.null_incident_button.setEnabled(True)
+        else:
+            self.null_incident_button.setChecked(False)
+            self.null_incident_button.setEnabled(False)
+        if self.current_experiment.transmitted_offset:
+            self.null_transmitted_button.setChecked(True)
+            self.null_transmitted_button.setEnabled(True)
+        elif not self.current_experiment.transmitted_offset and self.current_experiment.crop_start:
+            self.null_transmitted_button.setChecked(False)
+            self.null_transmitted_button.setEnabled(True)
+        else:
+            self.null_transmitted_button.setChecked(False)
+            self.null_transmitted_button.setEnabled(False)
+
+        self._clear_layout(self.plot_layout)
         self._update_bar()
 
     @catch_exceptions
@@ -311,9 +345,9 @@ class MainWindow(QMainWindow):
         QMessageBox.information(self, title, message)
 
     def _crop_signal(self):
-        self.crop_button.setChecked(False)
 
         if not self.plot_layout.count():
+            self.crop_button.setChecked(False)
             instructions = [
                 'Zoom in on the analysis region, which should contain at least one full incident, reflected, and transmitted wave.',
                 'Click once to set the start of the region, and click again to set the end.',
@@ -335,6 +369,8 @@ class MainWindow(QMainWindow):
             crop_widget = CropWidget(self.current_experiment, fig, axes, instructions)
             crop_widget.okClicked.connect(self._on_crop_signal)
             self.plot_layout.addWidget(crop_widget)
+        else:
+            self.crop_button.setChecked(not self.crop_button.isChecked())
 
     def _on_crop_signal(self):
         # Get the one widget in the layout
@@ -345,6 +381,7 @@ class MainWindow(QMainWindow):
         self.current_experiment.crop_end = crop_widget.end
         self.crop_button.setChecked(True)
         self.current_experiment.set_crop()
+        self.current_experiment.update_crop_voltage()
         self.null_incident_button.setEnabled(True)
         self.null_transmitted_button.setEnabled(True)
 
@@ -359,9 +396,9 @@ class MainWindow(QMainWindow):
                 self._clear_layout(item.layout())
 
     def _null_incident(self):
-        self.null_incident_button.setChecked(False)
 
         if not self.plot_layout.count():
+            self.null_incident_button.setChecked(False)
             instructions = [
                 'Select the region of the incident wave that is supposed to be zero. An offset will be applied later.',
                 'Click once to set the start of the region, and click again to set the end.',
@@ -384,13 +421,84 @@ class MainWindow(QMainWindow):
             crop_widget = CropWidget(self.current_experiment, fig, ax, instructions, ignore_initial_crop=True)
             crop_widget.okClicked.connect(self._on_null_incident)
             self.plot_layout.addWidget(crop_widget)
+        else:
+            self.null_incident_button.setChecked(not self.null_incident_button.isChecked())
 
     def _on_null_incident(self):
         # noinspection PyTypeChecker
         crop_widget: CropWidget = self.plot_layout.itemAt(0).widget()
         self._clear_layout(self.plot_layout)
         self.current_experiment.set_incident_offset(crop_widget.start, crop_widget.end)
+        self.current_experiment.update_crop_voltage()
         self.null_incident_button.setChecked(True)
+
+    def _null_transmitted(self):
+
+        if not self.plot_layout.count():
+            self.null_transmitted_button.setChecked(False)
+            instructions = [
+                'Select the region of the transmitted wave that is supposed to be zero. An offset will be applied later.',
+                'Click once to set the start of the region, and click again to set the end.',
+                'Once finished, click "Ok" to proceed with the analysis.'
+            ]
+            instructions = '\n'.join(instructions)
+
+            # Make a plot with only transmitted data
+            fig, ax = plt.subplots()
+            x = np.arange(self.current_experiment.n_samples)
+            transmitted_raw = self.current_experiment.raw_data[:, 1]
+            ax.plot(x, transmitted_raw, label='Transmitted')
+
+            # Add labels
+            ax.legend()
+            ax.set_xlabel('Index')
+            ax.set_ylabel('Voltage (V)')
+            ax.set_title('Null Transmitted')
+
+            crop_widget = CropWidget(self.current_experiment, fig, ax, instructions, ignore_initial_crop=True)
+            crop_widget.okClicked.connect(self._on_null_transmitted)
+            self.plot_layout.addWidget(crop_widget)
+        else:
+            self.null_transmitted_button.setChecked(not self.null_transmitted_button.isChecked())
+
+    def _on_null_transmitted(self):
+        # noinspection PyTypeChecker
+        crop_widget: CropWidget = self.plot_layout.itemAt(0).widget()
+        self._clear_layout(self.plot_layout)
+        self.current_experiment.set_transmitted_offset(crop_widget.start, crop_widget.end)
+        self.current_experiment.update_crop_voltage()
+        self.null_transmitted_button.setChecked(True)
+
+    def _show_signal(self):
+        if not self.plot_layout.count():
+            signal = ShowSignal(self.current_experiment)
+            signal.okClicked.connect(self._on_show_signal)
+            self.plot_layout.addWidget(signal)
+
+    def _on_show_signal(self):
+        self._clear_layout(self.plot_layout)
+
+    def _on_incident_invert(self):
+        self.current_experiment.incident_invert = -self.current_experiment.incident_invert
+        self.current_experiment.update_crop_voltage()
+        logger.info(f"Inverting incident wave at {self.current_experiment.name}.")
+
+        # If the ShowSignal widget is present, update the plot
+        if self.plot_layout.count():
+            existing_widget = self.plot_layout.itemAt(0).widget()
+            if isinstance(existing_widget, ShowSignal):
+                existing_widget.update_plot()
+
+    def _on_transmitted_invert(self):
+        self.current_experiment.transmitted_invert = -self.current_experiment.transmitted_invert
+        self.current_experiment.update_crop_voltage()
+        logger.info(f"Inverting transmitted wave at {self.current_experiment.name}.")
+
+        # If the ShowSignal widget is present, update the plot
+        if self.plot_layout.count():
+            existing_widget = self.plot_layout.itemAt(0).widget()
+            if isinstance(existing_widget, ShowSignal):
+                existing_widget.update_plot()
 
 
 def exception_hook(exctype, value, tb):

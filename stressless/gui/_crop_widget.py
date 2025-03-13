@@ -58,6 +58,9 @@ class CropWidget(QtWidgets.QWidget):
             self.axes.set_xlim(self.start, self.end)
             self.axes.relim()
             self.axes.autoscale_view(scalex=False, scaley=True)
+        else:
+            self.start = 0
+            self.end = experiment.n_samples - 1
 
         # Temporary vertical line (blue) for the mouse cursor.
         self.temp_line = self.axes.axvline(0, color='blue', linestyle='--', alpha=0.7, visible=False)
