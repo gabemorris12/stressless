@@ -8,7 +8,7 @@ from PyQt6.QtGui import QAction
 from PyQt6.QtWidgets import QMainWindow, QApplication, QComboBox, QWidget, QVBoxLayout, QHBoxLayout, \
     QLabel, QGroupBox, QGridLayout, QLineEdit, QPushButton, QInputDialog, QMessageBox, QRadioButton
 
-from stressless import SETTINGS
+from stressless import _SETTINGS
 from stressless.core.hopkinson_data import HopkinsonExperiment
 from stressless.gui._bar_config import BarConfigWindow
 from stressless.gui._crop_widget import CropWidget
@@ -24,7 +24,7 @@ class MainWindow(QMainWindow):
         super().__init__(parent)
         self.setWindowTitle("Stressless - SHPB Analysis")
         self.resize(1200, 800)
-        self.open_dir = SETTINGS.value("open_dir", "")
+        self.open_dir = _SETTINGS.value("open_dir", "")
 
         self.hopkinson_data: list[HopkinsonExperiment] = []
         self.current_experiment: Optional[HopkinsonExperiment] = None
@@ -196,7 +196,7 @@ class MainWindow(QMainWindow):
         data, file_name = load_from_excel(self, self.open_dir)
         if data is not None:
             self.open_dir = str(file_name.parent)
-            SETTINGS.setValue("open_dir", self.open_dir)
+            _SETTINGS.setValue("open_dir", self.open_dir)
 
             # Create a HopkinsonExperiment object from the data
             existing_labels = [self.dataset_combo.itemText(i) for i in range(self.dataset_combo.count())]
