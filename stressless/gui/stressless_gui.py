@@ -8,7 +8,7 @@ from PyQt6.QtGui import QAction
 from PyQt6.QtWidgets import QMainWindow, QApplication, QComboBox, QWidget, QVBoxLayout, QHBoxLayout, \
     QLabel, QGroupBox, QGridLayout, QLineEdit, QPushButton, QInputDialog, QMessageBox, QRadioButton
 
-from stressless import _SETTINGS
+from stressless.gui import _SETTINGS
 from stressless.core.hopkinson_data import HopkinsonExperiment
 from stressless.gui._bar_config import BarConfigWindow
 from stressless.gui._crop_widget import CropWidget
