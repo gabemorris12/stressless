@@ -53,48 +53,45 @@ class MainWindow(QMainWindow):
 
     def _setup_ui(self):
         # Set the central widget with a horizontal layout to divide the window
-        central_widget = QWidget(self)
+        central_widget = QWidget()
         self.setCentralWidget(central_widget)
-        main_layout = QHBoxLayout(central_widget)
+        main_layout = QHBoxLayout()
         main_layout.setContentsMargins(WIDGET_SPACE, WIDGET_SPACE, WIDGET_SPACE, WIDGET_SPACE)
         main_layout.setSpacing(WIDGET_SPACE)
+        central_widget.setLayout(main_layout)
 
         # Left sidebar: fixed width
-        sidebar = QWidget(central_widget)
+        sidebar = QWidget()
         sidebar.setFixedWidth(SIDEBAR_WIDTH)
-        sidebar_layout = QVBoxLayout(sidebar)
+        sidebar_layout = QVBoxLayout()
         sidebar_layout.setContentsMargins(WIDGET_SPACE, WIDGET_SPACE, WIDGET_SPACE, WIDGET_SPACE)
         sidebar_layout.setSpacing(WIDGET_SPACE)
+        sidebar.setLayout(sidebar_layout)
 
-        # Add the dataset box and combobox to the sidebar
-        dataset_box = QGroupBox("Dataset", sidebar)
-        dataset_layout = QVBoxLayout(dataset_box)
-        self.dataset_combo = QComboBox(dataset_box)
+        # Dataset GroupBox
+        dataset_box = QGroupBox("Dataset")
+        dataset_layout = QVBoxLayout()
+        self.dataset_combo = QComboBox()
         self.dataset_combo.currentIndexChanged.connect(self._update_dataset)
         dataset_layout.addWidget(self.dataset_combo)
         dataset_box.setLayout(dataset_layout)
-
         sidebar_layout.addWidget(dataset_box)
 
-        # Add the bar configuration box and widgets
-        bar_config_box = QGroupBox("Bar Configuration", sidebar)
-        bar_config_layout = QVBoxLayout(bar_config_box)
-        bar_combo_layout = QGridLayout(bar_config_box)
-        bar_combo_layout.addWidget(
-            QLabel('Incident Bar', bar_config_box), 0, 0
-        )
-        self.incident_combo = QComboBox(bar_config_box)
+        # Bar Configuration GroupBox
+        bar_config_box = QGroupBox("Bar Configuration")
+        bar_config_layout = QVBoxLayout()
+        bar_combo_layout = QGridLayout()
+        bar_combo_layout.addWidget(QLabel("Incident Bar"), 0, 0)
+        self.incident_combo = QComboBox()
         bar_combo_layout.addWidget(self.incident_combo, 0, 1)
-        bar_combo_layout.addWidget(
-            QLabel('Transmitted Bar', bar_config_box), 1, 0
-        )
-        self.transmitted_combo = QComboBox(bar_config_box)
+        bar_combo_layout.addWidget(QLabel("Transmitted Bar"), 1, 0)
+        self.transmitted_combo = QComboBox()
         bar_combo_layout.addWidget(self.transmitted_combo, 1, 1)
         bar_config_layout.addLayout(bar_combo_layout)
-        bar_button_layout = QHBoxLayout(bar_config_box)
-        add_button = QPushButton("Add", bar_config_box)
-        edit_button = QPushButton("Edit", bar_config_box)
-        remove_button = QPushButton("Remove", bar_config_box)
+        bar_button_layout = QHBoxLayout()
+        add_button = QPushButton("Add")
+        edit_button = QPushButton("Edit")
+        remove_button = QPushButton("Remove")
         bar_button_layout.addWidget(add_button)
         bar_button_layout.addWidget(edit_button)
         bar_button_layout.addWidget(remove_button)
@@ -104,32 +101,30 @@ class MainWindow(QMainWindow):
         self.incident_combo.currentIndexChanged.connect(self._update_bar)
         self.transmitted_combo.currentIndexChanged.connect(self._update_bar)
         bar_config_layout.addLayout(bar_button_layout)
-
         bar_config_box.setLayout(bar_config_layout)
-
         sidebar_layout.addWidget(bar_config_box)
 
-        # Add the sample geometry box and widgets
-        sample_geometry_box = QGroupBox("Sample Geometry", sidebar)
-        sample_geometry_layout = QGridLayout(sample_geometry_box)
-        # row 1 is the length
-        length_label = QLabel("Length", sample_geometry_box)
-        length_input = QLineEdit(sample_geometry_box)
-        length_unit = QLabel("mm", sample_geometry_box)
-        # row 2 is the area
-        area_label = QLabel("Area", sample_geometry_box)
-        area_input = QLineEdit(sample_geometry_box)
-        area_unit = QLabel("mm²", sample_geometry_box)
-        # row 3 is the diameter
-        diameter_label = QLabel("Diameter", sample_geometry_box)
-        diameter_input = QLineEdit(sample_geometry_box)
-        diameter_unit = QLabel("mm", sample_geometry_box)
+        # Sample Geometry GroupBox
+        sample_geometry_box = QGroupBox("Sample Geometry")
+        sample_geometry_layout = QGridLayout()
+        # Row 1: Length
+        length_label = QLabel("Length")
+        length_input = QLineEdit()
+        length_unit = QLabel("mm")
         sample_geometry_layout.addWidget(length_label, 0, 0)
         sample_geometry_layout.addWidget(length_input, 0, 1)
         sample_geometry_layout.addWidget(length_unit, 0, 2)
+        # Row 2: Area
+        area_label = QLabel("Area")
+        area_input = QLineEdit()
+        area_unit = QLabel("mm²")
         sample_geometry_layout.addWidget(area_label, 1, 0)
         sample_geometry_layout.addWidget(area_input, 1, 1)
         sample_geometry_layout.addWidget(area_unit, 1, 2)
+        # Row 3: Diameter
+        diameter_label = QLabel("Diameter")
+        diameter_input = QLineEdit()
+        diameter_unit = QLabel("mm")
         sample_geometry_layout.addWidget(diameter_label, 2, 0)
         sample_geometry_layout.addWidget(diameter_input, 2, 1)
         sample_geometry_layout.addWidget(diameter_unit, 2, 2)
@@ -137,10 +132,9 @@ class MainWindow(QMainWindow):
         sample_geometry_layout.setColumnStretch(1, 2)
         sample_geometry_layout.setColumnStretch(2, 1)
         sample_geometry_box.setLayout(sample_geometry_layout)
-
         sidebar_layout.addWidget(sample_geometry_box)
 
-        # Add the signal processing box and widgets
+        # Signal Processing GroupBox
         signal_processing_box = QGroupBox("Signal Processing")
         signal_processing_layout = QVBoxLayout()
         self.show_signal_btn = QPushButton("Show Signal")
@@ -152,44 +146,42 @@ class MainWindow(QMainWindow):
         self.crop_button.setEnabled(False)
         self.crop_button.clicked.connect(self._crop_signal)
         signal_processing_layout.addWidget(self.crop_button)
-        # Null incident
         null_layout = QGridLayout()
         self.null_incident_button = QPushButton("Null Incident")
         self.null_incident_button.setCheckable(True)
         self.null_incident_button.setEnabled(False)
         self.null_incident_button.clicked.connect(self._null_incident)
-        incident_invert = QRadioButton("Invert")
-        incident_invert.clicked.connect(self._on_incident_invert)
-        incident_invert.setAutoExclusive(False)
-        null_layout.addWidget(incident_invert, 0, 0)
+        self.incident_invert = QRadioButton("Invert")
+        self.incident_invert.clicked.connect(self._on_incident_invert)
+        self.incident_invert.setAutoExclusive(False)
+        self.incident_invert.setEnabled(False)
+        null_layout.addWidget(self.incident_invert, 0, 0)
         null_layout.addWidget(self.null_incident_button, 0, 1)
-        # Null transmitted
         self.null_transmitted_button = QPushButton("Null Transmitted")
         self.null_transmitted_button.setCheckable(True)
         self.null_transmitted_button.setEnabled(False)
         self.null_transmitted_button.clicked.connect(self._null_transmitted)
-        transmitted_invert = QRadioButton("Invert")
-        transmitted_invert.clicked.connect(self._on_transmitted_invert)
-        transmitted_invert.setAutoExclusive(False)
-        null_layout.addWidget(transmitted_invert, 1, 0)
+        self.transmitted_invert = QRadioButton("Invert")
+        self.transmitted_invert.clicked.connect(self._on_transmitted_invert)
+        self.transmitted_invert.setAutoExclusive(False)
+        self.transmitted_invert.setEnabled(False)
+        null_layout.addWidget(self.transmitted_invert, 1, 0)
         null_layout.addWidget(self.null_transmitted_button, 1, 1)
         null_layout.setColumnStretch(0, 1)
         null_layout.setColumnStretch(1, 2)
         signal_processing_layout.addLayout(null_layout)
         signal_processing_box.setLayout(signal_processing_layout)
-
         sidebar_layout.addWidget(signal_processing_box)
 
-        # Right area: plot area, which will occupy the remaining space
-        plot_area = QWidget(central_widget)
-        self.plot_layout = QVBoxLayout(plot_area)
-        self.plot_layout.setContentsMargins(WIDGET_SPACE, WIDGET_SPACE, WIDGET_SPACE, WIDGET_SPACE)
-        self.plot_layout.setSpacing(WIDGET_SPACE)
-        # TODO: add an SVG or something here for style when there is no plot
-
-        # Add sidebar and plot area to the main layout
         sidebar_layout.addStretch()
         main_layout.addWidget(sidebar)
+
+        # Plot area
+        plot_area = QWidget()
+        self.plot_layout = QVBoxLayout()
+        self.plot_layout.setContentsMargins(WIDGET_SPACE, WIDGET_SPACE, WIDGET_SPACE, WIDGET_SPACE)
+        self.plot_layout.setSpacing(WIDGET_SPACE)
+        plot_area.setLayout(self.plot_layout)
         main_layout.addWidget(plot_area)
 
     @catch_exceptions
@@ -232,8 +224,16 @@ class MainWindow(QMainWindow):
         # Check if the dataset has been cropped and nulled:
         if self.current_experiment.crop_start is None:
             self.crop_button.setChecked(False)
+            self.incident_invert.setEnabled(False)
+            self.transmitted_invert.setEnabled(False)
         else:
             self.crop_button.setChecked(True)
+            self.incident_invert.setEnabled(True)
+            self.transmitted_invert.setEnabled(True)
+            incident_invert_val = True if self.current_experiment.incident_invert == -1 else False
+            transmitted_invert_val = True if self.current_experiment.transmitted_invert == -1 else False
+            self.incident_invert.setChecked(incident_invert_val)
+            self.transmitted_invert.setChecked(transmitted_invert_val)
         if self.current_experiment.incident_offset:
             self.null_incident_button.setChecked(True)
             self.null_incident_button.setEnabled(True)
@@ -384,6 +384,8 @@ class MainWindow(QMainWindow):
         self.current_experiment.update_crop_voltage()
         self.null_incident_button.setEnabled(True)
         self.null_transmitted_button.setEnabled(True)
+        self.incident_invert.setEnabled(True)
+        self.transmitted_invert.setEnabled(True)
 
     def _clear_layout(self, layout):
         while layout.count():
