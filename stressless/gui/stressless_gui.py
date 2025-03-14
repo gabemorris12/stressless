@@ -17,7 +17,7 @@ from stressless.util.helpers import load_from_excel, catch_exceptions
 from stressless.util.logger import logger
 
 WIDGET_SPACE = 5
-SIDEBAR_WIDTH = 200
+SIDEBAR_WIDTH = 240
 
 
 class MainWindow(QMainWindow):
