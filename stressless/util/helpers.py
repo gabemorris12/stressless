@@ -60,6 +60,7 @@ def catch_exceptions(func):
     :param func:
     :return:
     """
+
     @wraps(func)
     def wrapper(*args, **kwargs):
         try:
@@ -67,4 +68,6 @@ def catch_exceptions(func):
         except Exception as e:
             parent = args[0] if isinstance(args[0], QWidget) else None
             QMessageBox.critical(parent, "Error", str(e))
+            return None
+
     return wrapper
